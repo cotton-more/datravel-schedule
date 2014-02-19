@@ -1,0 +1,14 @@
+<?php
+
+include_once __DIR__.'/vendor/autoload.php';
+
+use Symfony\Component\Console\Application;
+use Niki\Command\Schedule as ScheduleCommand;
+
+$app = new Application();
+
+$app->add(new ScheduleCommand());
+
+$app->run();
+
+// vim: set ft=php:
