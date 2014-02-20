@@ -4,6 +4,7 @@ datravel-schedule
 Install
 =======
 * Clone this repository or dowload it
+* Switch to the application folder
 * Install Composer:  ```curl -sS https://getcomposer.org/installer | php```
 * Run application: ```php console schedule:mid-meeting```
 
