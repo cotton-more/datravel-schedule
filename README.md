@@ -8,6 +8,7 @@ Install
   * https://github.com/vansanblch/datravel-schedule/archive/v0.1.zip
 * Switch to the application folder
 * Install Composer:  `curl -sS https://getcomposer.org/installer | php`
+* ... and install all dependancies with `./composer.phar install`
 * Run application: `php console schedule:mid-meeting`
 
 Description
