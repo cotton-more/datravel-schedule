@@ -7,14 +7,13 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Output\StreamOutput;
 
 use DateTime;
 use DateInterval;
 
 class Schedule extends Command
 {
-    private $today;
-
     protected function configure()
     {
         $this->setName('schedule:mid-meeting');
@@ -25,6 +24,12 @@ class Schedule extends Command
             'Months to display',
             6
         );
+        $this->addOption(
+            'file',
+            'f',
+            InputOption::VALUE_OPTIONAL,
+            'Output file'
+        );
     }
 
     protected function execute(InputInterface $in, OutputInterface $out)
@@ -33,20 +38,20 @@ class Schedule extends Command
             [ 'Month', 'Meeting day', 'Testing day' ]
         ];
 
+        // set timezone
         if (!ini_get('date.timezone')) {
             date_default_timezone_set('UTC');
         }
 
-        $today = new DateTime();
-        $date = clone $today;
+        // start from today
+        $date = new DateTime();
 
-        $this->today = $today;
-
-        $i = (int) $in->getArgument('months');
-        if ($i <= 0) {
+        $months = (int) $in->getArgument('months');
+        if ($months <= 0) {
             throw new \Exception('Number of months should be greater than zero');
         }
 
+        // fill a result array
         do {
             $line = [
                 $date->format('F'),
@@ -55,19 +60,37 @@ class Schedule extends Command
             ];
             $this->moveToNextMonth($date);
             $lines[] = $line;
-        } while (--$i);
+        } while (--$months);
 
+        // if filename was set replace output with file resource
+        if ($file = $in->getOption('file')) {
+            $basaname = basename($file);
+            $fh = fopen('./'.$basaname, 'w');
+            if ($fh) {
+                $out = new StreamOutput($fh);
+            }
+        }
+
+        // output result
         foreach ($lines as $line) {
             $out->writeln(implode(';', $line));
         }
     }
 
+    /**
+     * getMeetingDay
+     * Get meeting day in the date
+     *
+     * @param \DateTime $date
+     * @return void
+     */
     protected function getMeetingDay(DateTime $date)
     {
         $meetingDay = 14;
         list($day, $month, $year) = explode(' ', $date->format('j n Y'));
 
         $result = null;
+
         if ($day <= $meetingDay) {
             $date->setDate($year, $month, $meetingDay);
             $weekday = (int) $date->format('N');
@@ -84,12 +107,21 @@ class Schedule extends Command
         return $result;
     }
 
+    /**
+     * getTestingDay
+     * Get testing day in the date. Testing date should be the last
+     * day of the month or the last Thursday
+     *
+     * @param \DateTime $date
+     * @return void
+     */
     protected function getTestingDay(DateTime $date)
     {
         $testingDay = $date->format('t');
         list($day, $month, $year) = explode(' ', $date->format('j m Y'));
         $date->setDate($year, $month, $testingDay);
 
+        // if testing
         $weekday = $date->format('N');
         switch ($weekday) {
             case 5:
@@ -108,6 +140,13 @@ class Schedule extends Command
         return $date->format('j, D');
     }
 
+    /**
+     * moveToNextMonth
+     * Move the passed date to the first day of the next month
+     *
+     * @param \DateTime $date
+     * @return void
+     */
     protected function moveToNextMonth(DateTime $date)
     {
         static $oneMonthInterval = null;
